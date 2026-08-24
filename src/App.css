@@ -603,11 +603,13 @@ body {
   color: #1a5a99;
 }
 
-.menu-settimanale {
+.menu-settimanale,
+.storico-piani {
   margin: 1rem 0;
 }
 
-.menu-settimanale h3 {
+.menu-settimanale h3,
+.storico-piani h3 {
   font-size: 0.95rem;
   margin-bottom: 0.5rem;
 }

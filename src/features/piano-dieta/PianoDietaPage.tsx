@@ -22,6 +22,41 @@ interface Sostituto {
   motivo: string
 }
 
+function formattaData(iso: string): string {
+  return new Date(iso).toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric' })
+}
+
+function DettaglioPianoSemplice({ piano }: { piano: PianoAlimentare }) {
+  return (
+    <div className="piano">
+      {piano.avvisi && piano.avvisi.length > 0 && (
+        <div className="avviso-allergie">
+          <span className="avviso-icona">⚠️</span>
+          <span>{piano.avvisi.join(' · ')}</span>
+        </div>
+      )}
+      {piano.pasti.map((pasto, i) => (
+        <div key={i} className="pasto">
+          <h3>{pasto.nome}</h3>
+          <ul>
+            {pasto.alimenti.map((alimento, j) => (
+              <li key={j}>
+                {alimento.nome}
+                {alimento.quantita ? ` — ${alimento.quantita}` : ''}
+              </li>
+            ))}
+          </ul>
+        </div>
+      ))}
+      {piano.note && (
+        <p className="note">
+          <strong>Note:</strong> {piano.note}
+        </p>
+      )}
+    </div>
+  )
+}
+
 export function PianoDietaPage() {
   const [piano, setPiano] = useState<PianoAlimentare | null>(store.getPiano())
   const [caricamento, setCaricamento] = useState(false)
@@ -33,14 +68,16 @@ export function PianoDietaPage() {
   const [copiato, setCopiato] = useState(false)
   const [sostituti, setSostituti] = useState<Record<string, Sostituto>>({})
   const [caricandoSostituto, setCaricandoSostituto] = useState<string | null>(null)
+  const [storico, setStorico] = useState<PianoAlimentare[]>(store.getStoricoPiani())
 
   async function handleFile(base64: string, mimeType: string) {
     setCaricamento(true)
     setErrore(null)
     try {
       const risultato = await estraiPianoAlimentare(base64, mimeType)
-      setPiano(risultato)
       store.setPiano(risultato)
+      setPiano(risultato)
+      setStorico(store.getStoricoPiani())
       setSostituti({})
     } catch (e) {
       setErrore((e as Error).message)
@@ -187,6 +224,21 @@ export function PianoDietaPage() {
       )}
 
       {!piano && !caricamento && <p className="stato">Nessun piano caricato ancora.</p>}
+
+      {storico.length > 0 && (
+        <div className="storico-piani">
+          <h3>Versioni precedenti</h3>
+          {storico.map((vecchioPiano, i) => (
+            <details key={i} className="riga-menu">
+              <summary>
+                <span className="giorno-menu">{formattaData(vecchioPiano.creatoIl)}</span>
+                <span className="titolo-menu">{vecchioPiano.pasti.length} pasti</span>
+              </summary>
+              <DettaglioPianoSemplice piano={vecchioPiano} />
+            </details>
+          ))}
+        </div>
+      )}
     </section>
   )
 }

@@ -54,7 +54,7 @@ npm run dev
 - [x] Promemoria locali (spesa settimanale, pasti) — solo ad app aperta
 - [x] Sostituzioni equivalenti per singolo alimento del piano
 - [x] Pagina Impostazioni unica (dispensa, ingredienti esclusi, promemoria)
-- [ ] Storico versioni del piano alimentare
+- [x] Storico versioni del piano alimentare
 - [ ] Setup Firebase (Auth, Firestore, Hosting, Cloud Functions) — ultimo step, sposta anche la chiamata a Gemini lato server
 - [ ] Notifiche push reali (Firebase Cloud Messaging, richiede il backend)
 - [ ] Deploy PWA installabile

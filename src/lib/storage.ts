@@ -15,6 +15,7 @@ const KEYS = {
   dispensa: 'raccolto.dispensa',
   aderenza: 'raccolto.aderenza',
   ricetteEscluse: 'raccolto.ingredienti-esclusi',
+  storicoPiani: 'raccolto.storico-piani',
   menuSettimanale: 'raccolto.menu-settimanale',
   promemoriaSpesa: 'raccolto.promemoria-spesa',
   promemoriaPasti: 'raccolto.promemoria-pasti'
@@ -42,7 +43,18 @@ export const store = {
     return leggi<PianoAlimentare | null>(KEYS.piano, null)
   },
   setPiano(piano: PianoAlimentare) {
+    const attuale = store.getPiano()
+    if (attuale) {
+      const storico = store.getStoricoPiani()
+      storico.unshift(attuale)
+      scrivi(KEYS.storicoPiani, storico)
+    }
     scrivi(KEYS.piano, piano)
+  },
+
+  // --- versioni precedenti del piano, più recente prima ---
+  getStoricoPiani(): PianoAlimentare[] {
+    return leggi<PianoAlimentare[]>(KEYS.storicoPiani, [])
   },
 
   getSpesa(): SpesaSettimana[] {
