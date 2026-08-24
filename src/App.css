@@ -217,6 +217,45 @@ body {
 
 /* --- piano alimentare --- */
 
+.avviso-allergie {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.7rem 0.9rem;
+  border-radius: 12px;
+  background: #fdecea;
+  color: #b3261e;
+  font-size: 0.88rem;
+  margin: 0.75rem 0;
+}
+
+.avviso-icona {
+  flex-shrink: 0;
+}
+
+.checklist-aderenza {
+  margin: 1rem 0;
+  padding: 0.75rem 0.9rem;
+  border-radius: 12px;
+  background: #f9f9f6;
+  border: 1px solid #eee;
+}
+
+.checklist-aderenza h3 {
+  margin: 0 0 0.5rem;
+  font-size: 0.88rem;
+  color: #555;
+}
+
+.voce-checklist {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.3rem 0;
+  font-size: 0.9rem;
+  text-transform: capitalize;
+}
+
 .piano .pasto {
   margin-bottom: 1rem;
 }
@@ -233,7 +272,142 @@ body {
   font-size: 0.9rem;
 }
 
+.bottone-secondario {
+  width: 100%;
+  background: none;
+  border: 1px solid #2f7a3d;
+  color: #2f7a3d;
+  border-radius: 10px;
+  padding: 0.7rem 1rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+  margin: 0.5rem 0;
+}
+
+.bottone-secondario:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.promemoria {
+  margin: 0.75rem 0;
+  padding: 0.75rem 0.9rem;
+  border-radius: 12px;
+  background: #f9f9f6;
+  border: 1px solid #eee;
+}
+
+.promemoria .voce-checklist {
+  text-transform: none;
+}
+
+.nota-promemoria {
+  font-size: 0.75rem;
+  color: #999;
+  margin: 0.4rem 0 0;
+}
+
+.riepilogo {
+  margin-top: 0.5rem;
+  padding: 0.85rem 1rem;
+  border-radius: 12px;
+  background: #f9f9f6;
+  border: 1px solid #eee;
+  font-size: 0.9rem;
+  color: #333;
+}
+
+.riepilogo p {
+  margin: 0 0 0.75rem;
+  line-height: 1.5;
+}
+
 /* --- spesa --- */
+
+.dispensa {
+  margin: 0.75rem 0;
+  padding: 0.75rem 0.9rem;
+  border-radius: 12px;
+  background: #f9f9f6;
+  border: 1px solid #eee;
+}
+
+.chip-lista {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.5rem;
+}
+
+.chip {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: #eef2ea;
+  color: #2f7a3d;
+  border-radius: 999px;
+  padding: 0.25rem 0.4rem 0.25rem 0.7rem;
+  font-size: 0.8rem;
+  text-transform: capitalize;
+}
+
+.chip button {
+  background: none;
+  border: none;
+  color: #2f7a3d;
+  cursor: pointer;
+  font-size: 0.75rem;
+  padding: 0.1rem 0.3rem;
+}
+
+.lista-suggerita {
+  margin: 0.75rem 0;
+  padding: 0.75rem 0.9rem;
+  border-radius: 12px;
+  background: #fff8e8;
+  border: 1px solid #f2e6c2;
+}
+
+.lista-suggerita h3 {
+  margin: 0 0 0.5rem;
+  font-size: 0.88rem;
+  color: #8a6d1e;
+}
+
+.voce-suggerita {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.4rem 0;
+  font-size: 0.88rem;
+  text-transform: capitalize;
+}
+
+.voce-suggerita button {
+  background: #2f7a3d;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 0.3rem 0.7rem;
+  font-size: 0.78rem;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.titolo-reparto {
+  font-size: 0.8rem;
+  color: #888;
+  text-transform: capitalize;
+  margin: 1rem 0 0.4rem;
+}
+
+.costo-totale {
+  margin-top: 1rem;
+  font-size: 0.92rem;
+  color: #333;
+  text-align: right;
+}
 
 .lista-spesa {
   list-style: none;
@@ -332,4 +506,78 @@ body {
   margin: 0;
   padding-left: 1.2rem;
   font-size: 0.9rem;
+}
+
+.cuore {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.1rem;
+  padding: 0;
+  line-height: 1;
+}
+
+.chip-nutrienti {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin: 0.5rem 0;
+}
+
+.chip-nutriente {
+  font-size: 0.72rem;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  background: #e6f0fa;
+  color: #1a5a99;
+}
+
+.menu-settimanale {
+  margin: 1rem 0;
+}
+
+.menu-settimanale h3 {
+  font-size: 0.95rem;
+  margin-bottom: 0.5rem;
+}
+
+.riga-menu {
+  background: #f9f9f6;
+  border: 1px solid #eee;
+  border-radius: 12px;
+  margin-bottom: 0.5rem;
+  overflow: hidden;
+}
+
+.riga-menu summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.65rem 0.85rem;
+  cursor: pointer;
+  list-style: none;
+}
+
+.riga-menu summary::-webkit-details-marker {
+  display: none;
+}
+
+.giorno-menu {
+  font-size: 0.82rem;
+  color: #666;
+  text-transform: capitalize;
+  flex-shrink: 0;
+}
+
+.titolo-menu {
+  font-size: 0.88rem;
+  text-align: right;
+}
+
+.riga-menu .ricetta {
+  border: none;
+  border-top: 1px solid #eee;
+  border-radius: 0;
+  background: none;
 }

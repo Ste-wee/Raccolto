@@ -45,12 +45,15 @@ npm run dev
 
 ## Roadmap
 
-- [ ] Scaffold PWA base (Vite + React + TS)
-- [ ] Setup Firebase (Auth, Firestore, Hosting)
-- [ ] Import piano alimentare via foto + Gemini
-- [ ] Modulo spesa (foto scontrino + inserimento manuale)
-- [ ] Dataset stagionalità frutta/verdura/carne
-- [ ] Generazione ricette in base a tempo di preparazione
+- [x] Scaffold PWA base (Vite + React + TS)
+- [x] Import piano alimentare via foto/PDF + Gemini, con avvisi allergie
+- [x] Modulo spesa (foto scontrino + inserimento manuale), lista generata dal piano, dispensa, reparti, costo stimato
+- [x] Dataset stagionalità frutta/verdura/carne, griglia con calendario di stagionalità
+- [x] Generazione ricette (singola e menu settimanale) con nutrienti, preferiti, porzioni
+- [x] Checklist aderenza giornaliera + riepilogo per la dietologa
+- [x] Promemoria locali (spesa settimanale, pasti) — solo ad app aperta
+- [ ] Setup Firebase (Auth, Firestore, Hosting, Cloud Functions) — ultimo step, sposta anche la chiamata a Gemini lato server
+- [ ] Notifiche push reali (Firebase Cloud Messaging, richiede il backend)
 - [ ] Deploy PWA installabile
 
 ---
