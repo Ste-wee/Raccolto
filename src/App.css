@@ -100,36 +100,49 @@ body {
 
 /* --- stagionalità --- */
 
-.grid {
+.griglia-stagione {
   list-style: none;
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 0.65rem;
+  gap: 0.6rem;
   padding: 0;
   margin: 0;
 }
 
-.card {
+.card-stagione {
+  position: relative;
   display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
-  padding: 0.85rem;
-  border-radius: 12px;
-  background: #f4f4f0;
-  border: 1px solid #e0e0d8;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.55rem 1.6rem 0.55rem 0.55rem;
+  border-radius: 14px;
+  background: #f9f9f6;
+  border: 1px solid #eee;
 }
 
-.card.frutta { border-left: 4px solid #d94f4f; }
-.card.verdura { border-left: 4px solid #2f7a3d; }
-.card.carne { border-left: 4px solid #a5672f; }
+.calendario-indicatore {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  line-height: 0;
+}
 
-.nome {
+.info-alimento {
+  flex: 1;
+  min-width: 0;
+}
+
+.nome-alimento {
   font-weight: 600;
   text-transform: capitalize;
+  font-size: 0.85rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.categoria {
-  font-size: 0.75rem;
+.categoria-alimento {
+  font-size: 0.72rem;
   color: #666;
   text-transform: capitalize;
 }

@@ -1,20 +1,31 @@
 import { useMemo } from 'react'
-import { prodottiDiStagione } from '../../lib/seasonality'
+import { elencoCompleto, eDiStagione } from '../../lib/seasonality'
+import { FoodIcon } from '../../components/FoodIcon'
+import { CalendarioBadge } from '../../components/CalendarioBadge'
 
 export function StagionalitaPage() {
   const meseCorrente = new Date().getMonth() + 1
-  const diStagione = useMemo(() => prodottiDiStagione(undefined, meseCorrente), [meseCorrente])
+  const prodotti = useMemo(() => elencoCompleto(), [])
 
   return (
     <section className="page">
-      <h2>🍅 Di stagione questo mese</h2>
-      <ul className="grid">
-        {diStagione.map(p => (
-          <li key={p.nome} className={`card ${p.categoria}`}>
-            <span className="nome">{p.nome}</span>
-            <span className="categoria">{p.categoria}</span>
-          </li>
-        ))}
+      <h2>🍅 Stagionalità</h2>
+      <ul className="griglia-stagione">
+        {prodotti.map(p => {
+          const stagione = eDiStagione(p.nome, meseCorrente)
+          return (
+            <li key={p.nome} className="card-stagione">
+              <FoodIcon nome={p.nome} categoria={p.categoria} dimensione={40} />
+              <div className="info-alimento">
+                <div className="nome-alimento">{p.nome}</div>
+                <div className="categoria-alimento">{p.categoria}</div>
+              </div>
+              <span className="calendario-indicatore">
+                <CalendarioBadge diStagione={stagione} />
+              </span>
+            </li>
+          )
+        })}
       </ul>
     </section>
   )
