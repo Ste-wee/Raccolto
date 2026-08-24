@@ -21,7 +21,12 @@ function tuttiIProdotti(): ProdottoStagionale[] {
   }))
 }
 
-/** true se il prodotto è di stagione nel mese indicato (1-12, default: mese corrente) */
+/** true se il prodotto è presente nel dataset di stagionalità */
+export function prodottoConosciuto(nomeProdotto: string): boolean {
+  return tuttiIProdotti().some(p => p.nome === nomeProdotto.toLowerCase())
+}
+
+/** true se il prodotto è di stagione nel mese indicato (1-12, default: mese corrente); false anche se il prodotto non è nel dataset */
 export function eDiStagione(nomeProdotto: string, mese: number = new Date().getMonth() + 1): boolean {
   const prodotto = tuttiIProdotti().find(p => p.nome === nomeProdotto.toLowerCase())
   if (!prodotto) return false

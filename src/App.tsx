@@ -1,37 +1,48 @@
-import { useMemo } from 'react'
-import { prodottiDiStagione } from './lib/seasonality'
+import { useState } from 'react'
+import { StagionalitaPage } from './features/stagionalita/StagionalitaPage'
+import { PianoDietaPage } from './features/piano-dieta/PianoDietaPage'
+import { SpesaPage } from './features/spesa/SpesaPage'
+import { RicettePage } from './features/ricette/RicettePage'
 import './App.css'
 
+const TAB = [
+  { id: 'stagionalita', icona: '🍅', label: 'Stagione' },
+  { id: 'piano', icona: '📋', label: 'Piano' },
+  { id: 'spesa', icona: '🛒', label: 'Spesa' },
+  { id: 'ricette', icona: '👩‍🍳', label: 'Ricette' }
+] as const
+
+type TabId = (typeof TAB)[number]['id']
+
 function App() {
-  const meseCorrente = new Date().getMonth() + 1
-  const diStagione = useMemo(() => prodottiDiStagione(undefined, meseCorrente), [meseCorrente])
+  const [tabAttiva, setTabAttiva] = useState<TabId>('stagionalita')
 
   return (
-    <main className="app">
-      <h1>🌾 Raccolto</h1>
-      <p className="subtitle">Dieta, spesa e ricette guidate dall'AI, in base alla stagionalità.</p>
+    <div className="app">
+      <header className="header">
+        <h1>🌾 Raccolto</h1>
+      </header>
 
-      <section>
-        <h2>Di stagione questo mese</h2>
-        <ul className="grid">
-          {diStagione.map(p => (
-            <li key={p.nome} className={`card ${p.categoria}`}>
-              <span className="nome">{p.nome}</span>
-              <span className="categoria">{p.categoria}</span>
-            </li>
-          ))}
-        </ul>
-      </section>
+      <main className="contenuto">
+        {tabAttiva === 'stagionalita' && <StagionalitaPage />}
+        {tabAttiva === 'piano' && <PianoDietaPage />}
+        {tabAttiva === 'spesa' && <SpesaPage />}
+        {tabAttiva === 'ricette' && <RicettePage />}
+      </main>
 
-      <section className="roadmap">
-        <h2>In arrivo</h2>
-        <ul>
-          <li>📋 Import piano alimentare da foto (Gemini)</li>
-          <li>🛒 Censimento spesa settimanale</li>
-          <li>👩‍🍳 Ricette generate in base al tempo di preparazione</li>
-        </ul>
-      </section>
-    </main>
+      <nav className="bottom-nav">
+        {TAB.map(tab => (
+          <button
+            key={tab.id}
+            className={tab.id === tabAttiva ? 'nav-item attiva' : 'nav-item'}
+            onClick={() => setTabAttiva(tab.id)}
+          >
+            <span className="nav-icona">{tab.icona}</span>
+            <span className="nav-label">{tab.label}</span>
+          </button>
+        ))}
+      </nav>
+    </div>
   )
 }
 
