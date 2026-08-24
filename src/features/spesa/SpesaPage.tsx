@@ -1,12 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { PhotoUpload } from '../../components/PhotoUpload'
 import { estraiScontrino, generaListaSpesa } from '../../lib/gemini'
 import { store } from '../../lib/storage'
 import { eDiStagione, prodottoConosciuto, prossimaStagione } from '../../lib/seasonality'
-import { pianificaPromemoriaSettimanale, richiediPermessoNotifiche } from '../../lib/notifiche'
 import type { SpesaItem } from '../../lib/types'
-
-const GIORNI_SETTIMANA = ['domenica', 'lunedì', 'martedì', 'mercoledì', 'giovedì', 'venerdì', 'sabato']
 
 function settimanaCorrente(): string {
   const ora = new Date()
@@ -33,34 +30,6 @@ export function SpesaPage() {
   const settimanaSalvata = store.getSpesa().find(s => s.settimana === settimana)
   const [items, setItems] = useState<SpesaItem[]>(settimanaSalvata?.items ?? [])
   const [suggeriti, setSuggeriti] = useState<SpesaItem[]>(settimanaSalvata?.suggeriti ?? [])
-  const [dispensa, setDispensa] = useState<string[]>(store.getDispensa())
-  const [mostraDispensa, setMostraDispensa] = useState(false)
-  const [nuovoArticoloDispensa, setNuovoArticoloDispensa] = useState('')
-  const [promemoria, setPromemoria] = useState(store.getPromemoriaSpesa())
-
-  useEffect(() => {
-    if (!promemoria.attivo) return
-    const annulla = pianificaPromemoriaSettimanale(
-      promemoria.giornoSettimana,
-      promemoria.ora,
-      promemoria.minuto,
-      'Giorno della spesa 🛒',
-      'Ricordati di controllare la lista in Raccolto.'
-    )
-    return annulla
-  }, [promemoria])
-
-  async function aggiornaPromemoria(nuove: typeof promemoria) {
-    if (nuove.attivo) {
-      const concesso = await richiediPermessoNotifiche()
-      if (!concesso) {
-        setErrore('Permesso notifiche negato dal browser: attivalo nelle impostazioni del sito per usare i promemoria.')
-        return
-      }
-    }
-    setPromemoria(nuove)
-    store.setPromemoriaSpesa(nuove)
-  }
 
   const [nome, setNome] = useState('')
   const [quantita, setQuantita] = useState('')
@@ -112,7 +81,7 @@ export function SpesaPage() {
     setGenerandoLista(true)
     setErrore(null)
     try {
-      const lista = await generaListaSpesa(piano, dispensa)
+      const lista = await generaListaSpesa(piano, store.getDispensa())
       salva(items, lista)
     } catch (e) {
       setErrore((e as Error).message)
@@ -128,20 +97,6 @@ export function SpesaPage() {
     )
   }
 
-  function aggiungiADispensa(nomeArticolo: string) {
-    const valore = nomeArticolo.trim()
-    if (!valore || dispensa.includes(valore)) return
-    const aggiornata = [...dispensa, valore]
-    setDispensa(aggiornata)
-    store.setDispensa(aggiornata)
-  }
-
-  function rimuoviDaDispensa(articolo: string) {
-    const aggiornata = dispensa.filter(a => a !== articolo)
-    setDispensa(aggiornata)
-    store.setDispensa(aggiornata)
-  }
-
   const costoTotale = items.reduce((totale, item) => totale + (item.prezzo ?? 0), 0)
 
   return (
@@ -151,84 +106,6 @@ export function SpesaPage() {
       <button className="bottone-secondario" onClick={generaLista} disabled={generandoLista}>
         {generandoLista ? 'Generazione...' : 'Genera lista dal piano alimentare'}
       </button>
-      <button className="bottone-secondario" onClick={() => setMostraDispensa(!mostraDispensa)}>
-        {mostraDispensa ? 'Nascondi dispensa' : `Dispensa (${dispensa.length})`}
-      </button>
-
-      <div className="promemoria">
-        <label className="voce-checklist">
-          <input
-            type="checkbox"
-            checked={promemoria.attivo}
-            onChange={e => aggiornaPromemoria({ ...promemoria, attivo: e.target.checked })}
-          />
-          Ricordami di fare la spesa
-        </label>
-        {promemoria.attivo && (
-          <div className="form-riga">
-            <label>
-              Giorno
-              <select
-                value={promemoria.giornoSettimana}
-                onChange={e => aggiornaPromemoria({ ...promemoria, giornoSettimana: Number(e.target.value) })}
-              >
-                {GIORNI_SETTIMANA.map((giorno, i) => (
-                  <option key={giorno} value={i}>
-                    {giorno}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label>
-              Ora
-              <input
-                type="time"
-                value={`${String(promemoria.ora).padStart(2, '0')}:${String(promemoria.minuto).padStart(2, '0')}`}
-                onChange={e => {
-                  const [ora, minuto] = e.target.value.split(':').map(Number)
-                  aggiornaPromemoria({ ...promemoria, ora, minuto })
-                }}
-              />
-            </label>
-          </div>
-        )}
-        <p className="nota-promemoria">Funziona solo mentre l'app resta aperta nel browser.</p>
-      </div>
-
-      {mostraDispensa && (
-        <div className="dispensa">
-          <p className="descrizione">Articoli sempre disponibili, esclusi automaticamente dalla lista generata.</p>
-          <div className="form-riga">
-            <input
-              placeholder="es. sale, olio, pasta"
-              value={nuovoArticoloDispensa}
-              onChange={e => setNuovoArticoloDispensa(e.target.value)}
-              onKeyDown={e => {
-                if (e.key === 'Enter') {
-                  aggiungiADispensa(nuovoArticoloDispensa)
-                  setNuovoArticoloDispensa('')
-                }
-              }}
-            />
-            <button
-              onClick={() => {
-                aggiungiADispensa(nuovoArticoloDispensa)
-                setNuovoArticoloDispensa('')
-              }}
-            >
-              Aggiungi
-            </button>
-          </div>
-          <div className="chip-lista">
-            {dispensa.map(articolo => (
-              <span key={articolo} className="chip">
-                {articolo}
-                <button onClick={() => rimuoviDaDispensa(articolo)}>✕</button>
-              </span>
-            ))}
-          </div>
-        </div>
-      )}
 
       {errore && <p className="errore">{errore}</p>}
 

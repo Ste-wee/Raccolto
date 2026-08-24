@@ -48,9 +48,6 @@ export function RicettePage() {
   const [porzioni, setPorzioni] = useState(1)
   const [ricette, setRicette] = useState<Ricetta[]>(store.getRicette())
   const [menuSettimanale, setMenuSettimanale] = useState<VoceMenuSettimanale[]>(store.getMenuSettimanale())
-  const [esclusi, setEsclusi] = useState<string[]>(store.getIngredientiEsclusi())
-  const [nuovoEscluso, setNuovoEscluso] = useState('')
-  const [mostraEsclusi, setMostraEsclusi] = useState(false)
   const [caricamento, setCaricamento] = useState(false)
   const [generandoMenu, setGenerandoMenu] = useState(false)
   const [errore, setErrore] = useState<string | null>(null)
@@ -68,7 +65,7 @@ export function RicettePage() {
       const ricetta = await generaRicetta({
         pianoAlimentare: store.getPiano(),
         ingredientiDisponibili: ingredientiDisponibili(),
-        ingredientiEsclusi: esclusi,
+        ingredientiEsclusi: store.getIngredientiEsclusi(),
         tempoMinuti: tempo,
         pasto,
         porzioni
@@ -89,7 +86,7 @@ export function RicettePage() {
       const menu = await generaMenuSettimanale({
         pianoAlimentare: store.getPiano(),
         ingredientiDisponibili: ingredientiDisponibili(),
-        ingredientiEsclusi: esclusi,
+        ingredientiEsclusi: store.getIngredientiEsclusi(),
         tempoMinuti: tempo,
         pasto,
         porzioni
@@ -107,21 +104,6 @@ export function RicettePage() {
     const aggiornate = ricette.map((r, i) => (i === indice ? { ...r, preferita: !r.preferita } : r))
     setRicette(aggiornate)
     store.setRicette(aggiornate)
-  }
-
-  function aggiungiEscluso() {
-    const valore = nuovoEscluso.trim()
-    if (!valore || esclusi.includes(valore)) return
-    const aggiornati = [...esclusi, valore]
-    setEsclusi(aggiornati)
-    store.setIngredientiEsclusi(aggiornati)
-    setNuovoEscluso('')
-  }
-
-  function rimuoviEscluso(ingrediente: string) {
-    const aggiornati = esclusi.filter(e => e !== ingrediente)
-    setEsclusi(aggiornati)
-    store.setIngredientiEsclusi(aggiornati)
   }
 
   return (
@@ -155,33 +137,7 @@ export function RicettePage() {
         <button className="bottone-secondario" onClick={generaMenu} disabled={generandoMenu}>
           {generandoMenu ? 'Generazione menu...' : 'Genera menu settimanale'}
         </button>
-        <button className="bottone-secondario" onClick={() => setMostraEsclusi(!mostraEsclusi)}>
-          {mostraEsclusi ? 'Nascondi esclusioni' : `Ingredienti da evitare (${esclusi.length})`}
-        </button>
       </div>
-
-      {mostraEsclusi && (
-        <div className="dispensa">
-          <p className="descrizione">Ingredienti che non vuoi mai nelle ricette generate.</p>
-          <div className="form-riga">
-            <input
-              placeholder="es. funghi, olive"
-              value={nuovoEscluso}
-              onChange={e => setNuovoEscluso(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && aggiungiEscluso()}
-            />
-            <button onClick={aggiungiEscluso}>Aggiungi</button>
-          </div>
-          <div className="chip-lista">
-            {esclusi.map(ingrediente => (
-              <span key={ingrediente} className="chip">
-                {ingrediente}
-                <button onClick={() => rimuoviEscluso(ingrediente)}>✕</button>
-              </span>
-            ))}
-          </div>
-        </div>
-      )}
 
       {errore && <p className="errore">{errore}</p>}
 

@@ -33,6 +33,22 @@ body {
   font-size: 1.2rem;
 }
 
+.header-riga {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.icona-header {
+  background: none;
+  border: none;
+  font-size: 1.15rem;
+  cursor: pointer;
+  padding: 0.2rem;
+  line-height: 1;
+}
+
 .contenuto {
   flex: 1;
   overflow-y: auto;
@@ -266,6 +282,42 @@ body {
   font-size: 0.95rem;
 }
 
+.piano li {
+  margin-bottom: 0.3rem;
+}
+
+.voce-alimento {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.link-sostituto {
+  background: none;
+  border: none;
+  color: #2f7a3d;
+  font-size: 0.75rem;
+  cursor: pointer;
+  padding: 0.1rem 0.3rem;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.link-sostituto:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.nota-sostituto {
+  font-size: 0.82rem;
+  color: #555;
+  background: #f4f4f0;
+  border-radius: 8px;
+  padding: 0.4rem 0.6rem;
+  margin: 0.25rem 0 0;
+}
+
 .note {
   color: #555;
   font-style: italic;
@@ -298,6 +350,25 @@ body {
 }
 
 .promemoria .voce-checklist {
+  text-transform: none;
+}
+
+.sezione-impostazioni {
+  margin-bottom: 1.5rem;
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid #eee;
+}
+
+.sezione-impostazioni:last-child {
+  border-bottom: none;
+}
+
+.sezione-impostazioni h3 {
+  font-size: 0.95rem;
+  margin: 0 0 0.3rem;
+}
+
+.sezione-impostazioni .voce-checklist {
   text-transform: none;
 }
 

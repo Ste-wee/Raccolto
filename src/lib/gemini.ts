@@ -225,6 +225,29 @@ export async function generaListaSpesa(piano: PianoAlimentare, dispensa: string[
   return chiamaGemini(prompt, [], schema)
 }
 
+export async function suggerisciSostituto(
+  alimento: string,
+  piano?: PianoAlimentare | null
+): Promise<{ sostituto: string; motivo: string }> {
+  const schema = {
+    type: 'OBJECT',
+    properties: {
+      sostituto: { type: 'STRING' },
+      motivo: { type: 'STRING' }
+    },
+    required: ['sostituto', 'motivo']
+  }
+
+  const vincoli = piano?.avvisi?.length ? `Rispetta sempre questi avvisi/allergie: ${piano.avvisi.join(', ')}.` : ''
+
+  const prompt =
+    `Suggerisci UN alimento sostitutivo equivalente dal punto di vista nutrizionale per "${alimento}", ` +
+    `adatto a un piano alimentare seguito da un/a dietologo/a. ${vincoli} ` +
+    'Spiega brevemente perché è un buon sostituto (una frase). Rispondi SOLO con il JSON, in italiano.'
+
+  return chiamaGemini(prompt, [], schema)
+}
+
 export async function generaRiepilogoDietologa(input: {
   piano: PianoAlimentare | null
   aderenzaPercentuale: number

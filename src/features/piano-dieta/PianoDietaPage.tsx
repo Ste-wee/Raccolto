@@ -1,9 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { PhotoUpload } from '../../components/PhotoUpload'
-import { estraiPianoAlimentare, generaRiepilogoDietologa } from '../../lib/gemini'
+import { estraiPianoAlimentare, generaRiepilogoDietologa, suggerisciSostituto } from '../../lib/gemini'
 import { store } from '../../lib/storage'
 import { oggiISO } from '../../lib/date'
-import { ORARIO_PASTI, pianificaPromemoriaGiornaliero, richiediPermessoNotifiche } from '../../lib/notifiche'
 import type { PianoAlimentare } from '../../lib/types'
 
 function calcolaAderenzaPercentuale(piano: PianoAlimentare | null): number {
@@ -18,6 +17,11 @@ function calcolaAderenzaPercentuale(piano: PianoAlimentare | null): number {
   return pastiPrevisti === 0 ? 0 : Math.min(1, pastiFatti / pastiPrevisti)
 }
 
+interface Sostituto {
+  sostituto: string
+  motivo: string
+}
+
 export function PianoDietaPage() {
   const [piano, setPiano] = useState<PianoAlimentare | null>(store.getPiano())
   const [caricamento, setCaricamento] = useState(false)
@@ -27,31 +31,8 @@ export function PianoDietaPage() {
   const [riepilogo, setRiepilogo] = useState<string | null>(null)
   const [generandoRiepilogo, setGenerandoRiepilogo] = useState(false)
   const [copiato, setCopiato] = useState(false)
-  const [promemoriaPasti, setPromemoriaPasti] = useState(store.getPromemoriaPasti())
-
-  useEffect(() => {
-    if (!promemoriaPasti.attivo || !piano) return
-    const annullamenti = piano.pasti
-      .filter(pasto => ORARIO_PASTI[pasto.nome.toLowerCase()])
-      .map(pasto => {
-        const orario = ORARIO_PASTI[pasto.nome.toLowerCase()]
-        return pianificaPromemoriaGiornaliero(orario.ora, orario.minuto, `È ora di: ${pasto.nome}`, 'Controlla il tuo piano alimentare in Raccolto.')
-      })
-    return () => annullamenti.forEach(annulla => annulla())
-  }, [promemoriaPasti, piano])
-
-  async function attivaPromemoriaPasti(attivo: boolean) {
-    if (attivo) {
-      const concesso = await richiediPermessoNotifiche()
-      if (!concesso) {
-        setErrore('Permesso notifiche negato dal browser: attivalo nelle impostazioni del sito per usare i promemoria.')
-        return
-      }
-    }
-    const aggiornato = { attivo }
-    setPromemoriaPasti(aggiornato)
-    store.setPromemoriaPasti(aggiornato)
-  }
+  const [sostituti, setSostituti] = useState<Record<string, Sostituto>>({})
+  const [caricandoSostituto, setCaricandoSostituto] = useState<string | null>(null)
 
   async function handleFile(base64: string, mimeType: string) {
     setCaricamento(true)
@@ -60,6 +41,7 @@ export function PianoDietaPage() {
       const risultato = await estraiPianoAlimentare(base64, mimeType)
       setPiano(risultato)
       store.setPiano(risultato)
+      setSostituti({})
     } catch (e) {
       setErrore((e as Error).message)
     } finally {
@@ -73,6 +55,19 @@ export function PianoDietaPage() {
       : [...pastiFatti, nomePasto]
     setPastiFatti(aggiornati)
     store.setAderenzaGiorno({ data, pastiFatti: aggiornati })
+  }
+
+  async function cercaSostituto(chiave: string, nomeAlimento: string) {
+    setCaricandoSostituto(chiave)
+    setErrore(null)
+    try {
+      const risultato = await suggerisciSostituto(nomeAlimento, piano)
+      setSostituti(prec => ({ ...prec, [chiave]: risultato }))
+    } catch (e) {
+      setErrore((e as Error).message)
+    } finally {
+      setCaricandoSostituto(null)
+    }
   }
 
   async function generaRiepilogo() {
@@ -135,29 +130,37 @@ export function PianoDietaPage() {
             ))}
           </div>
 
-          <div className="promemoria">
-            <label className="voce-checklist">
-              <input
-                type="checkbox"
-                checked={promemoriaPasti.attivo}
-                onChange={e => attivaPromemoriaPasti(e.target.checked)}
-              />
-              Ricordami i pasti (colazione, pranzo, cena...)
-            </label>
-            <p className="nota-promemoria">Funziona solo mentre l'app resta aperta nel browser.</p>
-          </div>
-
           <div className="piano">
             {piano.pasti.map((pasto, i) => (
               <div key={i} className="pasto">
                 <h3>{pasto.nome}</h3>
                 <ul>
-                  {pasto.alimenti.map((alimento, j) => (
-                    <li key={j}>
-                      {alimento.nome}
-                      {alimento.quantita ? ` — ${alimento.quantita}` : ''}
-                    </li>
-                  ))}
+                  {pasto.alimenti.map((alimento, j) => {
+                    const chiave = `${i}-${j}`
+                    const sostituto = sostituti[chiave]
+                    return (
+                      <li key={j}>
+                        <div className="voce-alimento">
+                          <span>
+                            {alimento.nome}
+                            {alimento.quantita ? ` — ${alimento.quantita}` : ''}
+                          </span>
+                          <button
+                            className="link-sostituto"
+                            onClick={() => cercaSostituto(chiave, alimento.nome)}
+                            disabled={caricandoSostituto === chiave}
+                          >
+                            {caricandoSostituto === chiave ? '...' : '🔄 sostituisci'}
+                          </button>
+                        </div>
+                        {sostituto && (
+                          <p className="nota-sostituto">
+                            <strong>{sostituto.sostituto}</strong> — {sostituto.motivo}
+                          </p>
+                        )}
+                      </li>
+                    )
+                  })}
                 </ul>
               </div>
             ))}
