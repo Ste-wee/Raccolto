@@ -6,8 +6,16 @@
 
 - **📋 Import piano alimentare** — fotografi il foglio del/della dietologa, Gemini lo legge ed estrae pasti/grammature/alimenti in formato strutturato.
 - **🛒 Spesa settimanale** — registri cosa compri: foto scontrino (estrazione automatica via Gemini) oppure inserimento manuale.
-- **🍅 Stagionalità** — database di frutta, verdura e carne con mesi di stagionalità: per ogni prodotto vedi se è di stagione ora e quando lo è.
-- **👩‍🍳 Ricette su misura** — generazione ricette (Gemini) basata su: piano alimentare, cosa hai in dispensa/spesa, tempo di preparazione disponibile.
+- **🍅 Stagionalità** — database di frutta, verdura, carne e pesce raggruppato per reparto, con la striscia dei 12 mesi per ogni prodotto e il mese corrente evidenziato.
+- **👩‍🍳 Ricette su misura** — sei proposte tra cui scegliere, basate su piano alimentare, spesa disponibile e tempo per cucinare.
+
+### Come vengono generate le ricette
+
+L'app prova a fornire **tre ricette cercate davvero online** (Gemini con Google Search) + **tre create dal modello**, chiaramente distinte nell'interfaccia.
+
+Sulle prime tre mostriamo le fonti che l'API dichiara di aver consultato. Non chiediamo al modello di "citare il link", perché in quel caso inventa URL plausibili ma inesistenti: mostriamo solo i riferimenti restituiti dai metadati di grounding.
+
+> ⚠️ **Il grounding con Google Search non è incluso nel piano gratuito di Gemini**: con una chiave free la chiamata risponde `429 RESOURCE_EXHAUSTED` anche quando le normali chiamate funzionano. In quel caso l'app lo dice in chiaro e chiede al modello altre tre ricette, così restano comunque sei proposte. Per avere le ricette con fonti reali serve attivare la fatturazione su Google AI Studio.
 
 ## Stack tecnico
 

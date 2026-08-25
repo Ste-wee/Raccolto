@@ -136,6 +136,16 @@ body {
   margin: 0.6rem 0;
 }
 
+.avviso-info {
+  color: #6b5a1f;
+  background: #fbf3dc;
+  border-radius: var(--raggio-piccolo);
+  padding: 0.65rem 0.85rem;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  margin: 0.6rem 0;
+}
+
 /* --- navigazione in basso --- */
 
 .bottom-nav {

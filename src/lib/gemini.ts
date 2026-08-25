@@ -14,6 +14,18 @@ interface ParteImmagine {
   base64: string
 }
 
+interface ErroreGemini extends Error {
+  stato?: number
+}
+
+/** Sollevato quando la ricerca web non è utilizzabile: l'app ripiega sulle proposte AI. */
+export class RicercaWebNonDisponibile extends Error {
+  constructor(messaggio: string) {
+    super(messaggio)
+    this.name = 'RicercaWebNonDisponibile'
+  }
+}
+
 async function inviaRichiesta(body: Record<string, unknown>): Promise<any> {
   if (!API_KEY) {
     throw new Error(
@@ -29,7 +41,9 @@ async function inviaRichiesta(body: Record<string, unknown>): Promise<any> {
 
   if (!risposta.ok) {
     const testoErrore = await risposta.text()
-    throw new Error(`Errore Gemini (${risposta.status}): ${testoErrore}`)
+    const errore = new Error(`Errore Gemini (${risposta.status}): ${testoErrore}`) as ErroreGemini
+    errore.stato = risposta.status
+    throw errore
   }
 
   return risposta.json()
@@ -183,17 +197,20 @@ export async function generaRicetta(input: InputRicetta): Promise<Ricetta> {
  * 3 ricette inventate dal modello. Nessuna fonte: sono create sul momento,
  * quindi vengono marcate come 'ai' e mostrate come tali nell'interfaccia.
  */
-export async function generaProposteAI(input: InputRicetta): Promise<Ricetta[]> {
+export async function generaProposteAI(input: InputRicetta, quante = 3, daEvitare: string[] = []): Promise<Ricetta[]> {
   const schema = { type: 'ARRAY', items: SCHEMA_RICETTA }
+  const esclusioni = daEvitare.length
+    ? ` Non riproporre queste ricette, già suggerite: ${daEvitare.join('; ')}.`
+    : ''
 
   const prompt =
-    `Proponi 3 ricette DIVERSE tra loro ${input.pasto ? `per ${input.pasto}` : ''}, ciascuna realizzabile in ` +
+    `Proponi ${quante} ricette DIVERSE tra loro ${input.pasto ? `per ${input.pasto}` : ''}, ciascuna realizzabile in ` +
     `MASSIMO ${input.tempoMinuti} minuti, per ${input.porzioni ?? 1} persona/e, usando preferibilmente questi ` +
     `ingredienti disponibili: ${input.ingredientiDisponibili.join(', ') || 'nessuno in particolare, proponi tu'}. ` +
-    `${descriviVincoliDieta(input.pianoAlimentare, input.ingredientiEsclusi)} ` +
+    `${descriviVincoliDieta(input.pianoAlimentare, input.ingredientiEsclusi)}${esclusioni} ` +
     'I passi di preparazione devono essere DETTAGLIATI e PRECISI: almeno 5 passi per ricetta, ognuno con ' +
     'temperature, tempi e quantità esatte dove sensato (es. "cuocere in forno statico a 180°C per 25 minuti"). ' +
-    'Includi una stima di calorie e macronutrienti a porzione. Rispondi SOLO con il JSON (array di 3 elementi), in italiano.'
+    `Includi una stima di calorie e macronutrienti a porzione. Rispondi SOLO con il JSON (array di ${quante} elementi), in italiano.`
 
   const risultato = await chiamaGemini(prompt, [], schema)
   const creataIl = new Date().toISOString()
@@ -254,10 +271,22 @@ export async function cercaProposteWeb(input: InputRicetta): Promise<Ricetta[]> 
     'calorie (number), proteineGrammi (number), carboidratiGrammi (number), grassiGrammi (number), note (string). ' +
     'Tutto in italiano, nessun testo fuori dal JSON.'
 
-  const dati = await inviaRichiesta({
-    contents: [{ parts: [{ text: prompt }] }],
-    tools: [{ google_search: {} }]
-  })
+  let dati: any
+  try {
+    dati = await inviaRichiesta({
+      contents: [{ parts: [{ text: prompt }] }],
+      tools: [{ google_search: {} }]
+    })
+  } catch (e) {
+    // La ricerca con Google Search non è coperta dal piano gratuito di Gemini:
+    // la quota risulta esaurita anche quando le normali chiamate funzionano.
+    if ((e as ErroreGemini).stato === 429) {
+      throw new RicercaWebNonDisponibile(
+        'La ricerca online con fonti verificabili non è inclusa nel piano gratuito di Gemini (quota Google Search esaurita). Servirebbe attivare la fatturazione su Google AI Studio.'
+      )
+    }
+    throw e
+  }
 
   const fontiReali = fontiDalGrounding(dati)
   const grezze = estraiJsonDalTesto(testoDellaRisposta(dati))

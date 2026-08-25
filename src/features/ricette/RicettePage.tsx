@@ -1,5 +1,10 @@
 import { useState } from 'react'
-import { cercaProposteWeb, generaProposteAI, generaMenuSettimanale } from '../../lib/gemini'
+import {
+  cercaProposteWeb,
+  generaProposteAI,
+  generaMenuSettimanale,
+  RicercaWebNonDisponibile
+} from '../../lib/gemini'
 import { store } from '../../lib/storage'
 import type { Ricetta, VoceMenuSettimanale } from '../../lib/types'
 
@@ -106,6 +111,7 @@ export function RicettePage() {
   const [cercando, setCercando] = useState(false)
   const [generandoMenu, setGenerandoMenu] = useState(false)
   const [errori, setErrori] = useState<string[]>([])
+  const [avvisoRicerca, setAvvisoRicerca] = useState<string | null>(null)
 
   function parametri() {
     const settimane = store.getSpesa()
@@ -123,19 +129,43 @@ export function RicettePage() {
   async function trovaProposte() {
     setCercando(true)
     setErrori([])
+    setAvvisoRicerca(null)
     setProposteWeb([])
     setProposteAI([])
 
     const args = parametri()
-    // Le due ricerche sono indipendenti: se una fallisce l'altra deve comunque arrivare.
+    // Le due chiamate sono indipendenti: se una fallisce l'altra deve comunque arrivare.
     const [web, ai] = await Promise.allSettled([cercaProposteWeb(args), generaProposteAI(args)])
 
     const problemi: string[] = []
-    if (web.status === 'fulfilled') setProposteWeb(web.value)
-    else problemi.push(`Ricerca dal web non riuscita: ${web.reason.message}`)
-    if (ai.status === 'fulfilled') setProposteAI(ai.value)
+    let daAI: Ricetta[] = []
+
+    if (ai.status === 'fulfilled') daAI = ai.value
     else problemi.push(`Proposte AI non riuscite: ${ai.reason.message}`)
 
+    if (web.status === 'fulfilled') {
+      setProposteWeb(web.value)
+    } else if (web.reason instanceof RicercaWebNonDisponibile) {
+      setAvvisoRicerca(web.reason.message)
+      // Senza le tre dal web restiamo a metà: chiediamo altre tre all'AI
+      // così hai comunque sei proposte tra cui scegliere.
+      if (daAI.length > 0) {
+        try {
+          const extra = await generaProposteAI(args, 3, daAI.map(r => r.titolo))
+          daAI = [...daAI, ...extra]
+        } catch (e) {
+          // Non restiamo zitti: se il secondo giro non arriva, va detto perché
+          // le proposte sono tre invece di sei.
+          problemi.push(
+            `Non è stato possibile aggiungere altre tre proposte (${(e as Error).message.slice(0, 120)}). Riprova tra un minuto.`
+          )
+        }
+      }
+    } else {
+      problemi.push(`Ricerca dal web non riuscita: ${web.reason.message}`)
+    }
+
+    setProposteAI(daAI)
     setErrori(problemi)
     setCercando(false)
   }
@@ -174,7 +204,7 @@ export function RicettePage() {
       <header className="page-header">
         <div>
           <h2>Ricette</h2>
-          <p className="descrizione">Sei proposte tra cui scegliere: tre trovate online, tre create dall'AI.</p>
+          <p className="descrizione">Sei proposte tra cui scegliere: cercate online dove possibile, altrimenti create dall'AI.</p>
         </div>
       </header>
 
@@ -197,12 +227,14 @@ export function RicettePage() {
           <input type="number" value={porzioni} min={1} step={1} onChange={e => setPorzioni(Number(e.target.value))} />
         </label>
         <button className="bottone-primario" onClick={trovaProposte} disabled={cercando}>
-          {cercando ? 'Ricerca in corso...' : 'Trova 6 proposte'}
+          {cercando ? 'Ricerca in corso...' : 'Trova proposte'}
         </button>
         <button className="bottone-secondario" onClick={generaMenu} disabled={generandoMenu}>
           {generandoMenu ? 'Generazione menu...' : 'Genera menu settimanale'}
         </button>
       </div>
+
+      {avvisoRicerca && <p className="avviso-info">{avvisoRicerca}</p>}
 
       {errori.map((errore, i) => (
         <p key={i} className="errore">
@@ -262,7 +294,7 @@ export function RicettePage() {
       )}
 
       {ricette.length === 0 && menuSettimanale.length === 0 && !ciSonoProposte && !cercando && (
-        <p className="stato">Nessuna ricetta ancora. Premi "Trova 6 proposte" per iniziare.</p>
+        <p className="stato">Nessuna ricetta ancora. Premi "Trova proposte" per iniziare.</p>
       )}
     </section>
   )
