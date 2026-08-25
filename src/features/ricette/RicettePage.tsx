@@ -1,44 +1,97 @@
 import { useState } from 'react'
-import { generaRicetta, generaMenuSettimanale } from '../../lib/gemini'
+import { cercaProposteWeb, generaProposteAI, generaMenuSettimanale } from '../../lib/gemini'
 import { store } from '../../lib/storage'
 import type { Ricetta, VoceMenuSettimanale } from '../../lib/types'
+
+function Nutrienti({ ricetta }: { ricetta: Ricetta }) {
+  if (!ricetta.calorie && !ricetta.proteineGrammi) return null
+  return (
+    <div className="chip-nutrienti">
+      {ricetta.calorie && <span className="chip-nutriente">{Math.round(ricetta.calorie)} kcal</span>}
+      {ricetta.proteineGrammi && <span className="chip-nutriente">{Math.round(ricetta.proteineGrammi)}g prot</span>}
+      {ricetta.carboidratiGrammi && <span className="chip-nutriente">{Math.round(ricetta.carboidratiGrammi)}g carb</span>}
+      {ricetta.grassiGrammi && <span className="chip-nutriente">{Math.round(ricetta.grassiGrammi)}g grassi</span>}
+    </div>
+  )
+}
+
+function CorpoRicetta({ ricetta }: { ricetta: Ricetta }) {
+  return (
+    <>
+      <h4>Ingredienti</h4>
+      <ul>
+        {ricetta.ingredienti.map((ing, i) => (
+          <li key={i}>{ing}</li>
+        ))}
+      </ul>
+      <h4>Preparazione</h4>
+      <ol>
+        {ricetta.passi.map((passo, i) => (
+          <li key={i}>{passo}</li>
+        ))}
+      </ol>
+      {ricetta.note && <p className="note">{ricetta.note}</p>}
+      {ricetta.origine === 'web' && ricetta.fonti && ricetta.fonti.length > 0 && (
+        <div className="fonti">
+          <h4>Fonti consultate</h4>
+          <ul className="lista-fonti">
+            {ricetta.fonti.map((fonte, i) => (
+              <li key={i}>
+                <a href={fonte.url} target="_blank" rel="noreferrer">
+                  {fonte.titolo}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+      {ricetta.origine === 'ai' && (
+        <p className="nota-origine">Ricetta creata dall'AI: non proviene da una fonte esistente.</p>
+      )}
+    </>
+  )
+}
 
 function CardRicetta({ ricetta, onTogglePreferita }: { ricetta: Ricetta; onTogglePreferita?: () => void }) {
   return (
     <article className="ricetta">
       <h3>
         {ricetta.titolo}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        <span className="azioni-ricetta">
           {onTogglePreferita && (
             <button className="cuore" onClick={onTogglePreferita} aria-label="Segna come preferita">
               {ricetta.preferita ? '❤️' : '🤍'}
             </button>
           )}
           <span className="tempo">{ricetta.tempoPreparazioneMinuti} min</span>
-        </div>
+        </span>
       </h3>
-      {(ricetta.calorie || ricetta.proteineGrammi) && (
-        <div className="chip-nutrienti">
-          {ricetta.calorie && <span className="chip-nutriente">{Math.round(ricetta.calorie)} kcal</span>}
-          {ricetta.proteineGrammi && <span className="chip-nutriente">{Math.round(ricetta.proteineGrammi)}g prot</span>}
-          {ricetta.carboidratiGrammi && <span className="chip-nutriente">{Math.round(ricetta.carboidratiGrammi)}g carb</span>}
-          {ricetta.grassiGrammi && <span className="chip-nutriente">{Math.round(ricetta.grassiGrammi)}g grassi</span>}
-        </div>
-      )}
-      <h4>Ingredienti</h4>
-      <ul>
-        {ricetta.ingredienti.map((ing, j) => (
-          <li key={j}>{ing}</li>
-        ))}
-      </ul>
-      <h4>Preparazione</h4>
-      <ol>
-        {ricetta.passi.map((passo, j) => (
-          <li key={j}>{passo}</li>
-        ))}
-      </ol>
-      {ricetta.note && <p className="note">{ricetta.note}</p>}
+      <Nutrienti ricetta={ricetta} />
+      <CorpoRicetta ricetta={ricetta} />
     </article>
+  )
+}
+
+function CardProposta({ ricetta, onScegli }: { ricetta: Ricetta; onScegli: () => void }) {
+  return (
+    <details className="proposta">
+      <summary>
+        <span className="proposta-info">
+          <span className="proposta-titolo">{ricetta.titolo}</span>
+          <span className="proposta-meta">
+            {ricetta.tempoPreparazioneMinuti} min
+            {ricetta.calorie ? ` · ${Math.round(ricetta.calorie)} kcal` : ''}
+            {ricetta.origine === 'web' ? ' · dal web' : ' · AI'}
+          </span>
+        </span>
+      </summary>
+      <div className="proposta-corpo">
+        <CorpoRicetta ricetta={ricetta} />
+        <button className="bottone-primario" onClick={onScegli}>
+          Scegli questa ricetta
+        </button>
+      </div>
+    </details>
   )
 }
 
@@ -48,53 +101,61 @@ export function RicettePage() {
   const [porzioni, setPorzioni] = useState(1)
   const [ricette, setRicette] = useState<Ricetta[]>(store.getRicette())
   const [menuSettimanale, setMenuSettimanale] = useState<VoceMenuSettimanale[]>(store.getMenuSettimanale())
-  const [caricamento, setCaricamento] = useState(false)
+  const [proposteWeb, setProposteWeb] = useState<Ricetta[]>([])
+  const [proposteAI, setProposteAI] = useState<Ricetta[]>([])
+  const [cercando, setCercando] = useState(false)
   const [generandoMenu, setGenerandoMenu] = useState(false)
-  const [errore, setErrore] = useState<string | null>(null)
+  const [errori, setErrori] = useState<string[]>([])
 
-  function ingredientiDisponibili(): string[] {
+  function parametri() {
     const settimane = store.getSpesa()
     const ultimaSettimana = settimane[settimane.length - 1]
-    return ultimaSettimana?.items.map(i => i.nome) ?? []
+    return {
+      pianoAlimentare: store.getPiano(),
+      ingredientiDisponibili: ultimaSettimana?.items.map(i => i.nome) ?? [],
+      ingredientiEsclusi: store.getIngredientiEsclusi(),
+      tempoMinuti: tempo,
+      pasto,
+      porzioni
+    }
   }
 
-  async function genera() {
-    setCaricamento(true)
-    setErrore(null)
-    try {
-      const ricetta = await generaRicetta({
-        pianoAlimentare: store.getPiano(),
-        ingredientiDisponibili: ingredientiDisponibili(),
-        ingredientiEsclusi: store.getIngredientiEsclusi(),
-        tempoMinuti: tempo,
-        pasto,
-        porzioni
-      })
-      store.addRicetta(ricetta)
-      setRicette(store.getRicette())
-    } catch (e) {
-      setErrore((e as Error).message)
-    } finally {
-      setCaricamento(false)
-    }
+  async function trovaProposte() {
+    setCercando(true)
+    setErrori([])
+    setProposteWeb([])
+    setProposteAI([])
+
+    const args = parametri()
+    // Le due ricerche sono indipendenti: se una fallisce l'altra deve comunque arrivare.
+    const [web, ai] = await Promise.allSettled([cercaProposteWeb(args), generaProposteAI(args)])
+
+    const problemi: string[] = []
+    if (web.status === 'fulfilled') setProposteWeb(web.value)
+    else problemi.push(`Ricerca dal web non riuscita: ${web.reason.message}`)
+    if (ai.status === 'fulfilled') setProposteAI(ai.value)
+    else problemi.push(`Proposte AI non riuscite: ${ai.reason.message}`)
+
+    setErrori(problemi)
+    setCercando(false)
+  }
+
+  function scegli(ricetta: Ricetta) {
+    store.addRicetta(ricetta)
+    setRicette(store.getRicette())
+    setProposteWeb([])
+    setProposteAI([])
   }
 
   async function generaMenu() {
     setGenerandoMenu(true)
-    setErrore(null)
+    setErrori([])
     try {
-      const menu = await generaMenuSettimanale({
-        pianoAlimentare: store.getPiano(),
-        ingredientiDisponibili: ingredientiDisponibili(),
-        ingredientiEsclusi: store.getIngredientiEsclusi(),
-        tempoMinuti: tempo,
-        pasto,
-        porzioni
-      })
+      const menu = await generaMenuSettimanale(parametri())
       store.setMenuSettimanale(menu)
       setMenuSettimanale(menu)
     } catch (e) {
-      setErrore((e as Error).message)
+      setErrori([(e as Error).message])
     } finally {
       setGenerandoMenu(false)
     }
@@ -106,12 +167,16 @@ export function RicettePage() {
     store.setRicette(aggiornate)
   }
 
+  const ciSonoProposte = proposteWeb.length > 0 || proposteAI.length > 0
+
   return (
     <section className="page">
-      <h2>👩‍🍳 Ricette</h2>
-      <p className="descrizione">
-        Genera ricette in base al piano alimentare, alla spesa dell'ultima settimana e al tempo che hai a disposizione.
-      </p>
+      <header className="page-header">
+        <div>
+          <h2>Ricette</h2>
+          <p className="descrizione">Sei proposte tra cui scegliere: tre trovate online, tre create dall'AI.</p>
+        </div>
+      </header>
 
       <div className="form-riga">
         <label>
@@ -131,15 +196,46 @@ export function RicettePage() {
           Porzioni
           <input type="number" value={porzioni} min={1} step={1} onChange={e => setPorzioni(Number(e.target.value))} />
         </label>
-        <button onClick={genera} disabled={caricamento}>
-          {caricamento ? 'Generazione...' : 'Genera ricetta'}
+        <button className="bottone-primario" onClick={trovaProposte} disabled={cercando}>
+          {cercando ? 'Ricerca in corso...' : 'Trova 6 proposte'}
         </button>
         <button className="bottone-secondario" onClick={generaMenu} disabled={generandoMenu}>
           {generandoMenu ? 'Generazione menu...' : 'Genera menu settimanale'}
         </button>
       </div>
 
-      {errore && <p className="errore">{errore}</p>}
+      {errori.map((errore, i) => (
+        <p key={i} className="errore">
+          {errore}
+        </p>
+      ))}
+
+      {ciSonoProposte && (
+        <div className="proposte">
+          {proposteWeb.length > 0 && (
+            <>
+              <h3 className="titolo-gruppo">
+                Trovate online
+                <span className="etichetta-origine web">con fonti</span>
+              </h3>
+              {proposteWeb.map((r, i) => (
+                <CardProposta key={`web-${i}`} ricetta={r} onScegli={() => scegli(r)} />
+              ))}
+            </>
+          )}
+          {proposteAI.length > 0 && (
+            <>
+              <h3 className="titolo-gruppo">
+                Create dall'AI
+                <span className="etichetta-origine ai">senza fonte</span>
+              </h3>
+              {proposteAI.map((r, i) => (
+                <CardProposta key={`ai-${i}`} ricetta={r} onScegli={() => scegli(r)} />
+              ))}
+            </>
+          )}
+        </div>
+      )}
 
       {menuSettimanale.length > 0 && (
         <div className="menu-settimanale">
@@ -156,14 +252,17 @@ export function RicettePage() {
         </div>
       )}
 
-      <div className="lista-ricette">
-        {ricette.map((r, i) => (
-          <CardRicetta key={i} ricetta={r} onTogglePreferita={() => togglePreferita(i)} />
-        ))}
-      </div>
+      {ricette.length > 0 && (
+        <div className="lista-ricette">
+          <h3 className="titolo-gruppo">Le tue ricette</h3>
+          {ricette.map((r, i) => (
+            <CardRicetta key={i} ricetta={r} onTogglePreferita={() => togglePreferita(i)} />
+          ))}
+        </div>
+      )}
 
-      {ricette.length === 0 && menuSettimanale.length === 0 && !caricamento && (
-        <p className="stato">Nessuna ricetta generata ancora.</p>
+      {ricette.length === 0 && menuSettimanale.length === 0 && !ciSonoProposte && !cercando && (
+        <p className="stato">Nessuna ricetta ancora. Premi "Trova 6 proposte" per iniziare.</p>
       )}
     </section>
   )

@@ -11,8 +11,8 @@ export default defineConfig({
         name: 'Raccolto',
         short_name: 'Raccolto',
         description: 'Dieta, spesa e ricette guidate dall\'AI, in base alla stagionalità.',
-        theme_color: '#2f7a3d',
-        background_color: '#ffffff',
+        theme_color: '#1e4d2b',
+        background_color: '#fbf8f1',
         display: 'standalone',
         icons: [
           { src: '/pwa-192x192.png', sizes: '192x192', type: 'image/png' },

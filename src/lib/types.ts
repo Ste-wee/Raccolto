@@ -20,10 +20,6 @@ export interface SpesaItem {
   nome: string
   quantita?: string
   categoria?: string
-  /** prezzo stimato in euro per la voce (manuale o stimato dall'AI) */
-  prezzo?: number
-  /** true se il prodotto è già disponibile in dispensa e non va ricomprato */
-  giaInDispensa?: boolean
 }
 
 export interface SpesaSettimana {
@@ -31,6 +27,12 @@ export interface SpesaSettimana {
   items: SpesaItem[]
   /** lista suggerita dall'AI a partire dal piano alimentare, prima di fare la spesa */
   suggeriti?: SpesaItem[]
+}
+
+/** Fonte web reale, ricavata dai risultati di ricerca effettivamente consultati da Gemini */
+export interface Fonte {
+  titolo: string
+  url: string
 }
 
 export interface Ricetta {
@@ -45,6 +47,9 @@ export interface Ricetta {
   carboidratiGrammi?: number
   grassiGrammi?: number
   preferita?: boolean
+  /** 'web' = trovata online con fonti verificabili, 'ai' = inventata dal modello */
+  origine?: 'web' | 'ai'
+  fonti?: Fonte[]
   creataIl: string
 }
 

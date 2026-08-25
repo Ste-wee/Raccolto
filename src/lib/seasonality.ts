@@ -1,6 +1,14 @@
 import seasonalProduce from '../data/seasonal-produce.json'
 
-export type Categoria = 'frutta' | 'verdura' | 'carne'
+export type Categoria = 'frutta' | 'verdura' | 'carne' | 'pesce'
+
+/** Ordine in cui mostrare i reparti nell'app */
+export const ORDINE_CATEGORIE: Categoria[] = ['verdura', 'frutta', 'carne', 'pesce']
+
+export const NOMI_MESI_COMPLETI = [
+  'gennaio', 'febbraio', 'marzo', 'aprile', 'maggio', 'giugno',
+  'luglio', 'agosto', 'settembre', 'ottobre', 'novembre', 'dicembre'
+]
 
 export interface ProdottoStagionale {
   nome: string
@@ -8,10 +16,7 @@ export interface ProdottoStagionale {
   mesiStagione: number[]
 }
 
-const NOMI_MESI = [
-  'gennaio', 'febbraio', 'marzo', 'aprile', 'maggio', 'giugno',
-  'luglio', 'agosto', 'settembre', 'ottobre', 'novembre', 'dicembre'
-]
+const NOMI_MESI = NOMI_MESI_COMPLETI
 
 function tuttiIProdotti(): ProdottoStagionale[] {
   return Object.entries(seasonalProduce).map(([nome, dati]) => ({
@@ -55,4 +60,23 @@ export function prodottiDiStagione(categoria?: Categoria, mese: number = new Dat
 
 export function elencoCompleto(): ProdottoStagionale[] {
   return tuttiIProdotti()
+}
+
+/**
+ * Raggruppa tutti i prodotti per reparto, nell'ordine di ORDINE_CATEGORIE.
+ * Dentro ogni reparto mette prima quelli di stagione nel mese indicato.
+ */
+export function raggruppaPerCategoria(
+  mese: number = new Date().getMonth() + 1
+): { categoria: Categoria; prodotti: ProdottoStagionale[] }[] {
+  return ORDINE_CATEGORIE.map(categoria => ({
+    categoria,
+    prodotti: tuttiIProdotti()
+      .filter(p => p.categoria === categoria)
+      .sort((a, b) => {
+        const aInStagione = a.mesiStagione.includes(mese) ? 0 : 1
+        const bInStagione = b.mesiStagione.includes(mese) ? 0 : 1
+        return aInStagione - bInStagione || a.nome.localeCompare(b.nome, 'it')
+      })
+  })).filter(gruppo => gruppo.prodotti.length > 0)
 }

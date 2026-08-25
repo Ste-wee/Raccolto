@@ -73,8 +73,6 @@ export function ImpostazioniPage({
 
   return (
     <section className="page">
-      <h2>Preferenze</h2>
-
       {errore && <p className="errore">{errore}</p>}
 
       <div className="sezione-impostazioni">

@@ -1,4 +1,4 @@
-import type { PianoAlimentare, SpesaItem, Ricetta, VoceMenuSettimanale } from './types'
+import type { PianoAlimentare, SpesaItem, Ricetta, VoceMenuSettimanale, Fonte } from './types'
 
 // NOTA: per ora la chiamata a Gemini parte dal client, comodo per sviluppare
 // in locale senza backend. Prima di pubblicare l'app va spostata dietro una
@@ -14,21 +14,11 @@ interface ParteImmagine {
   base64: string
 }
 
-async function chiamaGemini(prompt: string, immagini: ParteImmagine[] = [], schema?: object): Promise<any> {
+async function inviaRichiesta(body: Record<string, unknown>): Promise<any> {
   if (!API_KEY) {
     throw new Error(
       "Manca VITE_GEMINI_API_KEY nel file .env (copia .env.example in .env e inserisci una chiave gratuita da https://aistudio.google.com/app/apikey)"
     )
-  }
-
-  const parts: Record<string, unknown>[] = [{ text: prompt }]
-  for (const img of immagini) {
-    parts.push({ inlineData: { mimeType: img.mimeType, data: img.base64 } })
-  }
-
-  const body: Record<string, unknown> = { contents: [{ parts }] }
-  if (schema) {
-    body.generationConfig = { responseMimeType: 'application/json', responseSchema: schema }
   }
 
   const risposta = await fetch(`${ENDPOINT}?key=${API_KEY}`, {
@@ -42,9 +32,32 @@ async function chiamaGemini(prompt: string, immagini: ParteImmagine[] = [], sche
     throw new Error(`Errore Gemini (${risposta.status}): ${testoErrore}`)
   }
 
-  const dati = await risposta.json()
-  const testo = dati.candidates?.[0]?.content?.parts?.[0]?.text
+  return risposta.json()
+}
+
+function testoDellaRisposta(dati: any): string {
+  const parti = dati.candidates?.[0]?.content?.parts ?? []
+  const testo = parti
+    .map((p: any) => p.text)
+    .filter(Boolean)
+    .join('')
   if (!testo) throw new Error('Risposta di Gemini vuota o inattesa')
+  return testo
+}
+
+async function chiamaGemini(prompt: string, immagini: ParteImmagine[] = [], schema?: object): Promise<any> {
+  const parts: Record<string, unknown>[] = [{ text: prompt }]
+  for (const img of immagini) {
+    parts.push({ inlineData: { mimeType: img.mimeType, data: img.base64 } })
+  }
+
+  const body: Record<string, unknown> = { contents: [{ parts }] }
+  if (schema) {
+    body.generationConfig = { responseMimeType: 'application/json', responseSchema: schema }
+  }
+
+  const dati = await inviaRichiesta(body)
+  const testo = testoDellaRisposta(dati)
   return schema ? JSON.parse(testo) : testo
 }
 
@@ -103,8 +116,7 @@ export async function estraiScontrino(base64: string, mimeType: string): Promise
       properties: {
         nome: { type: 'STRING' },
         quantita: { type: 'STRING' },
-        categoria: { type: 'STRING', enum: ['frutta', 'verdura', 'carne', 'altro'] },
-        prezzo: { type: 'NUMBER', description: 'prezzo in euro della voce, se leggibile sullo scontrino' }
+        categoria: { type: 'STRING', enum: ['frutta', 'verdura', 'carne', 'pesce', 'altro'] }
       },
       required: ['nome']
     }
@@ -112,9 +124,9 @@ export async function estraiScontrino(base64: string, mimeType: string): Promise
 
   const prompt =
     'Questo è uno scontrino della spesa. Estrai SOLO i prodotti alimentari (ignora intestazione, ' +
-    'totali, sconti, punti fedeltà, IVA). Per ciascun prodotto indica: nome normalizzato e leggibile ' +
-    '(es. "pomodori" invece di "POMODOR RAMATO KG"), quantità se leggibile, categoria tra ' +
-    'frutta/verdura/carne/altro, e prezzo in euro se presente sullo scontrino. Rispondi SOLO con il JSON.'
+    'totali, prezzi, sconti, punti fedeltà, IVA). Per ciascun prodotto indica: nome normalizzato e leggibile ' +
+    '(es. "pomodori" invece di "POMODOR RAMATO KG"), quantità se leggibile, e categoria tra ' +
+    'frutta/verdura/carne/pesce/altro. Rispondi SOLO con il JSON.'
 
   return chiamaGemini(prompt, [{ mimeType, base64 }], schema)
 }
@@ -167,6 +179,107 @@ export async function generaRicetta(input: InputRicetta): Promise<Ricetta> {
   return { ...risultato, creataIl: new Date().toISOString() }
 }
 
+/**
+ * 3 ricette inventate dal modello. Nessuna fonte: sono create sul momento,
+ * quindi vengono marcate come 'ai' e mostrate come tali nell'interfaccia.
+ */
+export async function generaProposteAI(input: InputRicetta): Promise<Ricetta[]> {
+  const schema = { type: 'ARRAY', items: SCHEMA_RICETTA }
+
+  const prompt =
+    `Proponi 3 ricette DIVERSE tra loro ${input.pasto ? `per ${input.pasto}` : ''}, ciascuna realizzabile in ` +
+    `MASSIMO ${input.tempoMinuti} minuti, per ${input.porzioni ?? 1} persona/e, usando preferibilmente questi ` +
+    `ingredienti disponibili: ${input.ingredientiDisponibili.join(', ') || 'nessuno in particolare, proponi tu'}. ` +
+    `${descriviVincoliDieta(input.pianoAlimentare, input.ingredientiEsclusi)} ` +
+    'I passi di preparazione devono essere DETTAGLIATI e PRECISI: almeno 5 passi per ricetta, ognuno con ' +
+    'temperature, tempi e quantità esatte dove sensato (es. "cuocere in forno statico a 180°C per 25 minuti"). ' +
+    'Includi una stima di calorie e macronutrienti a porzione. Rispondi SOLO con il JSON (array di 3 elementi), in italiano.'
+
+  const risultato = await chiamaGemini(prompt, [], schema)
+  const creataIl = new Date().toISOString()
+  return (risultato as Ricetta[]).map(r => ({ ...r, origine: 'ai' as const, creataIl }))
+}
+
+/** Estrae dai metadati di grounding solo le fonti web realmente restituite da Google Search. */
+function fontiDalGrounding(dati: any): Fonte[] {
+  const chunks = dati.candidates?.[0]?.groundingMetadata?.groundingChunks ?? []
+  const fonti: Fonte[] = []
+  for (const chunk of chunks) {
+    const url = chunk?.web?.uri
+    if (!url) continue
+    const titolo = chunk.web.title || url
+    if (!fonti.some(f => f.url === url)) fonti.push({ titolo, url })
+  }
+  return fonti
+}
+
+/** Il modello con la ricerca attiva non può usare responseSchema: il JSON arriva nel testo. */
+function estraiJsonDalTesto(testo: string): any {
+  const pulito = testo.replace(/```json/gi, '').replace(/```/g, '').trim()
+  const inizio = pulito.indexOf('[')
+  const fine = pulito.lastIndexOf(']')
+  if (inizio === -1 || fine === -1) {
+    throw new Error('Gemini non ha restituito un JSON leggibile per le ricette dal web')
+  }
+  return JSON.parse(pulito.slice(inizio, fine + 1))
+}
+
+/** Associa a una ricetta le fonti il cui titolo o dominio combacia con il sito dichiarato dal modello. */
+function abbinaFonti(sitoDichiarato: string | undefined, fontiReali: Fonte[]): Fonte[] {
+  if (!sitoDichiarato) return fontiReali
+  const cercato = sitoDichiarato.toLowerCase().replace(/^www\./, '')
+  const corrispondenti = fontiReali.filter(f => {
+    const titolo = f.titolo.toLowerCase()
+    return titolo.includes(cercato) || cercato.includes(titolo.replace(/^www\./, ''))
+  })
+  // Se non c'è corrispondenza non inventiamo nulla: mostriamo tutte le fonti consultate.
+  return corrispondenti.length > 0 ? corrispondenti : fontiReali
+}
+
+/**
+ * 3 ricette cercate davvero online con Google Search. Le fonti mostrate sono
+ * quelle che l'API dichiara di aver consultato: non chiediamo al modello di
+ * "citare un link", perché in quel caso inventerebbe URL plausibili ma falsi.
+ */
+export async function cercaProposteWeb(input: InputRicetta): Promise<Ricetta[]> {
+  const prompt =
+    `Cerca online 3 ricette italiane reali e collaudate ${input.pasto ? `per ${input.pasto}` : ''}, ciascuna ` +
+    `realizzabile in massimo ${input.tempoMinuti} minuti, per ${input.porzioni ?? 1} persona/e, che usino ` +
+    `preferibilmente questi ingredienti: ${input.ingredientiDisponibili.join(', ') || 'ingredienti di stagione'}. ` +
+    `${descriviVincoliDieta(input.pianoAlimentare, input.ingredientiEsclusi)} ` +
+    'Per ogni ricetta trovata riporta fedelmente il procedimento della fonte, con almeno 5 passi dettagliati ' +
+    '(temperature, tempi e quantità esatte). Indica in "sito" il nome del sito da cui proviene la ricetta.\n\n' +
+    'Rispondi SOLO con un array JSON di 3 oggetti con questi campi: titolo (string), sito (string), ' +
+    'tempoPreparazioneMinuti (number), porzioni (number), ingredienti (array di string), passi (array di string), ' +
+    'calorie (number), proteineGrammi (number), carboidratiGrammi (number), grassiGrammi (number), note (string). ' +
+    'Tutto in italiano, nessun testo fuori dal JSON.'
+
+  const dati = await inviaRichiesta({
+    contents: [{ parts: [{ text: prompt }] }],
+    tools: [{ google_search: {} }]
+  })
+
+  const fontiReali = fontiDalGrounding(dati)
+  const grezze = estraiJsonDalTesto(testoDellaRisposta(dati))
+  const creataIl = new Date().toISOString()
+
+  return (grezze as any[]).map(r => ({
+    titolo: r.titolo,
+    tempoPreparazioneMinuti: r.tempoPreparazioneMinuti,
+    porzioni: r.porzioni,
+    ingredienti: r.ingredienti ?? [],
+    passi: r.passi ?? [],
+    calorie: r.calorie,
+    proteineGrammi: r.proteineGrammi,
+    carboidratiGrammi: r.carboidratiGrammi,
+    grassiGrammi: r.grassiGrammi,
+    note: r.note,
+    origine: 'web' as const,
+    fonti: abbinaFonti(r.sito, fontiReali),
+    creataIl
+  }))
+}
+
 export interface InputMenuSettimanale extends InputRicetta {
   giorni?: string[]
 }
@@ -208,7 +321,7 @@ export async function generaListaSpesa(piano: PianoAlimentare, dispensa: string[
       properties: {
         nome: { type: 'STRING' },
         quantita: { type: 'STRING', description: 'quantità totale da comprare per l\'intera settimana' },
-        categoria: { type: 'STRING', enum: ['frutta', 'verdura', 'carne', 'altro'] }
+        categoria: { type: 'STRING', enum: ['frutta', 'verdura', 'carne', 'pesce', 'altro'] }
       },
       required: ['nome']
     }

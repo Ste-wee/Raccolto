@@ -1,8 +1,9 @@
-:root {
-  color-scheme: light;
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
 }
 
-body {
-  margin: 0;
-  background: #ffffff;
+:root {
+  color-scheme: light;
 }

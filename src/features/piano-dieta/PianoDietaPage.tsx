@@ -135,10 +135,14 @@ export function PianoDietaPage() {
 
   return (
     <section className="page">
-      <h2>📋 Piano alimentare</h2>
-      <p className="descrizione">
-        Carica una foto (o un PDF) del foglio del/della dietologo/a: l'AI lo trasforma in un piano strutturato.
-      </p>
+      <header className="page-header">
+        <div>
+          <h2>Piano alimentare</h2>
+          <p className="descrizione">
+            Carica una foto o un PDF del foglio del/della dietologo/a: l'AI lo trasforma in un piano strutturato.
+          </p>
+        </div>
+      </header>
 
       <PhotoUpload label="Carica piano alimentare (foto o PDF)" onImage={handleFile} accettaPdf />
       {caricamento && <p className="stato">Lettura in corso...</p>}

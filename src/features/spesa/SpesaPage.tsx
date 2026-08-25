@@ -13,7 +13,7 @@ function settimanaCorrente(): string {
   return `${ora.getFullYear()}-W${String(numeroSettimana).padStart(2, '0')}`
 }
 
-const ORDINE_REPARTI = ['frutta', 'verdura', 'carne', 'altro']
+const ORDINE_REPARTI = ['verdura', 'frutta', 'carne', 'pesce', 'altro']
 
 function raggruppaPerReparto(items: SpesaItem[]): [string, SpesaItem[]][] {
   const gruppi = new Map<string, SpesaItem[]>()
@@ -33,7 +33,6 @@ export function SpesaPage() {
 
   const [nome, setNome] = useState('')
   const [quantita, setQuantita] = useState('')
-  const [prezzo, setPrezzo] = useState('')
   const [caricamento, setCaricamento] = useState(false)
   const [generandoLista, setGenerandoLista] = useState(false)
   const [errore, setErrore] = useState<string | null>(null)
@@ -46,13 +45,9 @@ export function SpesaPage() {
 
   function aggiungiManuale() {
     if (!nome.trim()) return
-    salva([
-      ...items,
-      { nome: nome.trim(), quantita: quantita.trim() || undefined, prezzo: prezzo ? Number(prezzo) : undefined }
-    ])
+    salva([...items, { nome: nome.trim(), quantita: quantita.trim() || undefined }])
     setNome('')
     setQuantita('')
-    setPrezzo('')
   }
 
   function rimuovi(indice: number) {
@@ -97,11 +92,14 @@ export function SpesaPage() {
     )
   }
 
-  const costoTotale = items.reduce((totale, item) => totale + (item.prezzo ?? 0), 0)
-
   return (
     <section className="page">
-      <h2>🛒 Spesa — settimana {settimana}</h2>
+      <header className="page-header">
+        <div>
+          <h2>Spesa</h2>
+          <p className="descrizione">Settimana {settimana}</p>
+        </div>
+      </header>
 
       <button className="bottone-secondario" onClick={generaLista} disabled={generandoLista}>
         {generandoLista ? 'Generazione...' : 'Genera lista dal piano alimentare'}
@@ -137,13 +135,6 @@ export function SpesaPage() {
           onChange={e => setQuantita(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && aggiungiManuale()}
         />
-        <input
-          placeholder="prezzo € (opz.)"
-          type="number"
-          value={prezzo}
-          onChange={e => setPrezzo(e.target.value)}
-          onKeyDown={e => e.key === 'Enter' && aggiungiManuale()}
-        />
         <button onClick={aggiungiManuale}>Aggiungi</button>
       </div>
 
@@ -163,7 +154,6 @@ export function SpesaPage() {
                   <span className="voce-nome">
                     {item.nome}
                     {item.quantita ? ` — ${item.quantita}` : ''}
-                    {item.prezzo ? ` (€${item.prezzo.toFixed(2)})` : ''}
                   </span>
                   {!conosciuto ? (
                     <span className="badge sconosciuto" title="Prodotto non presente nel database di stagionalità">
@@ -187,12 +177,6 @@ export function SpesaPage() {
       ))}
 
       {items.length === 0 && <p className="stato">Nessun prodotto ancora per questa settimana.</p>}
-
-      {costoTotale > 0 && (
-        <p className="costo-totale">
-          Totale stimato: <strong>€{costoTotale.toFixed(2)}</strong>
-        </p>
-      )}
     </section>
   )
 }

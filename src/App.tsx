@@ -4,15 +4,24 @@ import { PianoDietaPage } from './features/piano-dieta/PianoDietaPage'
 import { SpesaPage } from './features/spesa/SpesaPage'
 import { RicettePage } from './features/ricette/RicettePage'
 import { ImpostazioniPage } from './features/impostazioni/ImpostazioniPage'
+import { Logo } from './components/Logo'
+import {
+  IconaPiano,
+  IconaStagione,
+  IconaSpesa,
+  IconaRicette,
+  IconaImpostazioni,
+  IconaIndietro
+} from './components/Icone'
 import { store } from './lib/storage'
 import { ORARIO_PASTI, pianificaPromemoriaGiornaliero, pianificaPromemoriaSettimanale } from './lib/notifiche'
 import './App.css'
 
 const TAB = [
-  { id: 'stagionalita', icona: '🍅', label: 'Stagione' },
-  { id: 'piano', icona: '📋', label: 'Piano' },
-  { id: 'spesa', icona: '🛒', label: 'Spesa' },
-  { id: 'ricette', icona: '👩‍🍳', label: 'Ricette' }
+  { id: 'piano', Icona: IconaPiano, label: 'Piano' },
+  { id: 'stagionalita', Icona: IconaStagione, label: 'Stagione' },
+  { id: 'spesa', Icona: IconaSpesa, label: 'Spesa' },
+  { id: 'ricette', Icona: IconaRicette, label: 'Ricette' }
 ] as const
 
 type TabId = (typeof TAB)[number]['id']
@@ -65,15 +74,18 @@ function App() {
         {vistaImpostazioni ? (
           <div className="header-riga">
             <button className="icona-header" onClick={() => setVistaImpostazioni(false)} aria-label="Indietro">
-              ←
+              <IconaIndietro />
             </button>
             <h1>Impostazioni</h1>
           </div>
         ) : (
           <div className="header-riga">
-            <h1>🌾 Raccolto</h1>
+            <div className="marchio">
+              <Logo dimensione={32} />
+              <h1>Raccolto</h1>
+            </div>
             <button className="icona-header" onClick={() => setVistaImpostazioni(true)} aria-label="Impostazioni">
-              ⚙️
+              <IconaImpostazioni />
             </button>
           </div>
         )}
@@ -104,7 +116,7 @@ function App() {
             className={!vistaImpostazioni && tab.id === tabAttiva ? 'nav-item attiva' : 'nav-item'}
             onClick={() => vaiAlTab(tab.id)}
           >
-            <span className="nav-icona">{tab.icona}</span>
+            <tab.Icona />
             <span className="nav-label">{tab.label}</span>
           </button>
         ))}
