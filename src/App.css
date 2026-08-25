@@ -206,6 +206,108 @@ body {
   color: #fff;
 }
 
+.lista-categorie {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.riga-categoria {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.7rem 0.8rem;
+  background: var(--card);
+  border: 1px solid var(--bordo);
+  border-radius: var(--raggio);
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+  color: var(--testo-muto);
+  transition: border-color 0.15s ease, transform 0.12s ease;
+}
+
+.riga-categoria:active {
+  transform: scale(0.99);
+}
+
+.riga-categoria:hover {
+  border-color: var(--verde-chiaro);
+}
+
+.cerchio-categoria {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.cerchio-categoria.verdura {
+  background: var(--verde-tint);
+  color: var(--verde-scuro);
+}
+
+.cerchio-categoria.frutta {
+  background: #fbe9e4;
+  color: #a2472c;
+}
+
+.cerchio-categoria.carne {
+  background: #f6ece2;
+  color: #8a5a2b;
+}
+
+.cerchio-categoria.pesce {
+  background: #e4edf4;
+  color: #2d5c7a;
+}
+
+.info-categoria {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.nome-categoria {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--testo);
+}
+
+.conta-categoria {
+  font-size: 0.75rem;
+  color: var(--testo-soft);
+}
+
+.titolo-con-indietro {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.bottone-indietro {
+  background: var(--card);
+  border: 1px solid var(--bordo);
+  color: var(--verde-scuro);
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
 .reparto {
   margin-bottom: 1.5rem;
 }

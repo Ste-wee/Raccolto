@@ -69,3 +69,50 @@ export function IconaIndietro({ dimensione = 20 }: Props) {
     </svg>
   )
 }
+
+export function IconaAvanti({ dimensione = 17 }: Props) {
+  return (
+    <svg {...comuni(dimensione)}>
+      <path d="M9 5l7 7-7 7" />
+    </svg>
+  )
+}
+
+export function IconaVerdura({ dimensione = 21 }: Props) {
+  return (
+    <svg {...comuni(dimensione)}>
+      <path d="M5 20c-.7-.7 3.6-9 7.8-12.2l2.4 2.4C12 14.4 5.7 20.7 5 20z" />
+      <path d="M13.5 9c-.2-2.2.9-3.9 3.2-4.4" />
+      <path d="M15.6 11c2.2.1 3.9-1.1 4.3-3.4" />
+    </svg>
+  )
+}
+
+export function IconaFrutta({ dimensione = 21 }: Props) {
+  return (
+    <svg {...comuni(dimensione)}>
+      <path d="M12 8.5c-3.9 0-6.3 2.7-6.3 6.1 0 3 2.4 5.4 6.3 5.4s6.3-2.4 6.3-5.4c0-3.4-2.4-6.1-6.3-6.1z" />
+      <path d="M12 8.5V5" />
+      <path d="M12.5 5.2c1.9-.4 2.8-1.5 3-3.2" />
+    </svg>
+  )
+}
+
+export function IconaCarne({ dimensione = 21 }: Props) {
+  return (
+    <svg {...comuni(dimensione)}>
+      <path d="M9 6.5c2.6-2 6.6-1.8 8.4.6 1.8 2.5.8 6-2 7.4-1.9 1-2.9 2.2-3.6 3.6-.8 1.6-3 1.9-4.2.6-1.2-1.3-.7-3 .1-4.3.8-1.3.6-2.6-.3-3.9-1-1.5-.6-3 1.6-4z" />
+      <circle cx="14" cy="9.5" r="1.9" />
+    </svg>
+  )
+}
+
+export function IconaPesce({ dimensione = 21 }: Props) {
+  return (
+    <svg {...comuni(dimensione)}>
+      <ellipse cx="13.5" cy="12" rx="7.5" ry="5" />
+      <path d="M6 12L2 8.5v7L6 12z" />
+      <circle cx="17" cy="10.5" r="0.95" fill="currentColor" stroke="none" />
+    </svg>
+  )
+}
