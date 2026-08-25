@@ -6,7 +6,7 @@ import type { PianoAlimentare, SpesaItem, Ricetta, VoceMenuSettimanale } from '.
 // nel bundle JS pubblico.
 
 const API_KEY = import.meta.env.VITE_GEMINI_API_KEY as string | undefined
-const MODELLO = 'gemini-2.5-flash'
+const MODELLO = 'gemini-3.6-flash'
 const ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${MODELLO}:generateContent`
 
 interface ParteImmagine {
